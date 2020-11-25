@@ -1,0 +1,5 @@
+/venv
+/testImages
+/resultPuzzles
+.idea
+__pycache__
