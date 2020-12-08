@@ -139,6 +139,7 @@ def main(mode, randomSize=None, imageFile=None):
         try:
             targetHeight = 20
             rows, cols = imageToPicross(imageFile, targetHeight)
+            print(pygame.mouse.get_focused())
         except Exception as e:
             # Unable to create puzzle from image
             print(e)
@@ -200,9 +201,9 @@ def main(mode, randomSize=None, imageFile=None):
             WINDOW.blit(clueText, (cluesWidth + int(i*sqSize + (0.3*sqSize if digits == 1 else 0)), cluesHeight - FONT_SIZE - index*FONT_SIZE))
             index += 1
 
-    # TODO: Display 'back to main menu' and 'reset puzzle' buttons
-    menuButton = createButton(os.path.join("PicrossAppAssets", "5Button.png"), (WIDTH//5, HEIGHT - bottomBarHeight//2))
-    restartButton = createButton(os.path.join("PicrossAppAssets", "20Button.png"), (3*WIDTH//5, HEIGHT - bottomBarHeight//2))
+    # Display 'main menu' and 'restart' buttons
+    menuButton = createButton(os.path.join("PicrossAppAssets", "MainMenuButton.png"), (WIDTH//5, HEIGHT - bottomBarHeight//2))
+    restartButton = createButton(os.path.join("PicrossAppAssets", "RestartButton.png"), (3*WIDTH//5, HEIGHT - bottomBarHeight//2))
 
     def redrawWindow():  # make OO with each square an object with position, size, type(empty, full, X)
         # if sqX != -1 and sqY != -1:
@@ -225,7 +226,7 @@ def main(mode, randomSize=None, imageFile=None):
 
         if solved:
             solvedTimer += 1
-            if solvedTimer > fps * 2:
+            if solvedTimer > fps*2:
                 run = False
             else:
                 continue
@@ -259,10 +260,9 @@ def main(mode, randomSize=None, imageFile=None):
                     elif pygame.mouse.get_pressed()[2]:  # right click = 3rd element
                         print(f"right clicked on square {colClicked}, {rowClicked}")
                         board.squares[rowClicked][colClicked].setState(2)  # any other state number means 'x' / grey
-                ## TODO: add functionality for restart and return to main menu buttons
-                elif mouseInRect(restartButton, pos):
+                elif mouseInRect(restartButton, pos) and event.type == pygame.MOUSEBUTTONDOWN:
                     board.resetBoard()
-                elif mouseInRect(menuButton, pos):
+                elif mouseInRect(menuButton, pos) and event.type == pygame.MOUSEBUTTONDOWN:
                     run = False
             if event.type == pygame.MOUSEBUTTONUP:
                 mouseDown = False
@@ -294,21 +294,24 @@ def mainMenu():
         WINDOW.blit(widthText, (WIDTH//4 - widthText.get_width() - numberButtonWidth//2, HEIGHT/3 - numberButtonHeight//4))
         WINDOW.blit(heightText, (WIDTH//4 - widthText.get_width() - numberButtonWidth//2, HEIGHT//3 + 3*numberButtonHeight//4))
 
+        randomButtonEnabled = selectedWidth != 0 and selectedHeight != 0
+
+        # Draw correct versions of the width and height buttons depending on which ones have been selected
         widthButtons = [
-            createButton(os.path.join("PicrossAppAssets", "5Button.png"), (WIDTH//4, HEIGHT//3)),
-            createButton(os.path.join("PicrossAppAssets", "10Button.png"), (WIDTH//4 + numberButtonWidth, HEIGHT//3)),
-            createButton(os.path.join("PicrossAppAssets", "15Button.png"), (WIDTH//4 + 2*numberButtonWidth, HEIGHT//3)),
-            createButton(os.path.join("PicrossAppAssets", "20Button.png"), (WIDTH//4 + 3*numberButtonWidth, HEIGHT//3))
+            createButton(os.path.join("PicrossAppAssets", "5ButtonPressed.png" if selectedWidth == 5 else "5Button.png"), (WIDTH // 4, HEIGHT // 3)),
+            createButton(os.path.join("PicrossAppAssets", "10ButtonPressed.png" if selectedWidth == 10 else "10Button.png"), (WIDTH // 4 + numberButtonWidth, HEIGHT // 3)),
+            createButton(os.path.join("PicrossAppAssets", "15ButtonPressed.png" if selectedWidth == 15 else "15Button.png"), (WIDTH // 4 + 2 * numberButtonWidth, HEIGHT // 3)),
+            createButton(os.path.join("PicrossAppAssets", "20ButtonPressed.png" if selectedWidth == 20 else "20Button.png"), (WIDTH // 4 + 3 * numberButtonWidth, HEIGHT // 3))
         ]
         heightButtons = [
-            createButton(os.path.join("PicrossAppAssets", "5Button.png"), (WIDTH//4, HEIGHT//3 + numberButtonHeight)),
-            createButton(os.path.join("PicrossAppAssets", "10Button.png"), (WIDTH//4 + numberButtonWidth, HEIGHT//3 + numberButtonHeight)),
-            createButton(os.path.join("PicrossAppAssets", "15Button.png"), (WIDTH//4 + 2*numberButtonWidth, HEIGHT//3 + numberButtonHeight)),
-            createButton(os.path.join("PicrossAppAssets", "20Button.png"), (WIDTH//4 + 3*numberButtonWidth, HEIGHT//3 + numberButtonHeight))
+            createButton(os.path.join("PicrossAppAssets", "5ButtonPressed.png" if selectedHeight == 5 else "5Button.png"), (WIDTH // 4, HEIGHT // 3 + numberButtonHeight)),
+            createButton(os.path.join("PicrossAppAssets", "10ButtonPressed.png" if selectedHeight == 10 else "10Button.png"), (WIDTH // 4 + numberButtonWidth, HEIGHT // 3 + numberButtonHeight)),
+            createButton(os.path.join("PicrossAppAssets", "15ButtonPressed.png" if selectedHeight == 15 else "15Button.png"), (WIDTH // 4 + 2 * numberButtonWidth, HEIGHT // 3 + numberButtonHeight)),
+            createButton(os.path.join("PicrossAppAssets", "20ButtonPressed.png" if selectedHeight == 20 else "20Button.png"), (WIDTH // 4 + 3 * numberButtonWidth, HEIGHT // 3 + numberButtonHeight))
         ]
 
-        randomButtonEnabled = selectedWidth != 0 and selectedHeight != 0
-        randomPuzzleButton = createButton(os.path.join("PicrossAppAssets", "RandomPuzzleButton.png"), (WIDTH//3, HEIGHT//2))
+        # Draw correct version of random button depending on if the width and height have been selected
+        randomButton = createButton(os.path.join("PicrossAppAssets", "RandomPuzzleButton.png" if randomButtonEnabled else "RandomPuzzleButtonDisabled.png"), (WIDTH // 3, HEIGHT // 2))
 
         imagePuzzleButton = createButton(os.path.join("PicrossAppAssets", "FromImageButton.png"), (2*WIDTH//3, 5*HEIGHT//12))
 
@@ -326,7 +329,7 @@ def mainMenu():
         if modeChoice == "random":
             main("random", randomSize=(selectedWidth, selectedHeight))
 
-            ## main just returned so reset mainMenu variables
+            # main just returned so reset mainMenu variables
             modeChoice = None
             selectedWidth, selectedHeight = (0,0)
         elif modeChoice == "image":
@@ -336,7 +339,7 @@ def mainMenu():
             tk.Tk().destroy()
             main("image", imageFile=imageFileName)
             
-            ## main just returned so reset mainMenu variables
+            # main just returned so reset mainMenu variables
             modeChoice = None
             selectedWidth, selectedHeight = (0, 0)
 
@@ -348,29 +351,35 @@ def mainMenu():
                 run = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mousePos = pygame.mouse.get_pos()
-                if mouseInRect(randomPuzzleButton, mousePos) and randomButtonEnabled:
+                if mouseInRect(randomButton, mousePos) and randomButtonEnabled:
                     print("rand button clicked!")
                     modeChoice = "random"
                 elif mouseInRect(imagePuzzleButton, mousePos):
                     modeChoice = "image"
                 elif mouseInRect(widthButtons[0], mousePos):
                     selectedWidth = 5
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(widthButtons[1], mousePos):
                     selectedWidth = 10
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(widthButtons[2], mousePos):
                     selectedWidth = 15
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(widthButtons[3], mousePos):
                     selectedWidth = 20
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[0], mousePos):
                     selectedHeight = 5
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[1], mousePos):
                     selectedHeight = 10
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[2], mousePos):
                     selectedHeight = 15
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[3], mousePos):
                     selectedHeight = 20
-
-                print(f"width: {selectedWidth}, height: {selectedHeight}")
+                    print(f"width: {selectedWidth}, height: {selectedHeight}")
 
     pygame.quit()
 
