@@ -31,10 +31,6 @@ def pixelate(img):
 
 def imageToPicross(imagePath, targetHeight):
     testImg = Image.open(imagePath)
-    # testBW = testImg.convert(mode="1")
-
-    # imgSmall = testGreyscale.reduce(4) #testImg.resize((16, 16), Image.BILINEAR)
-    # pixelTest = pixelate(testImg)
 
     ratioWidthToHeight = testImg.width / testImg.height
     puzzleSizeImg = testImg.resize((int(targetHeight * ratioWidthToHeight), targetHeight), Image.NEAREST)
@@ -43,15 +39,7 @@ def imageToPicross(imagePath, targetHeight):
     func = lambda x: 255 if x > threshold else 0
 
     imgGrey = puzzleSizeImg.convert(mode="L")  # Convert to greyscale
-    puzzleImg = imgGrey.point(func, mode="1")
-
-    # puzzleImgData = np.asarray(imgGrey)
-    # thresholdedData = (puzzleImgData > threshold) * 1.0
-
-    # plt.imshow(thresholdedData)
-    # plt.show()
-
-    # [[not row[p] for p in row] for row in np.asarray(puzzleImg)]
+    puzzleImg = imgGrey.point(func, mode="1")  # Convert to black & white
 
     puzzleRows = (~np.asarray(puzzleImg) * 1).tolist()
     puzzleCols = [[row[j] for row in puzzleRows] for j in range(puzzleImg.width)]
@@ -64,5 +52,5 @@ def imageToPicross(imagePath, targetHeight):
     # if not os.path.exists(puzzleImgName):
     #   puzzleImg.save(puzzleImgName)
 
-if not os.path.exists(resultsFolder):
-    os.makedirs(resultsFolder)
+# if not os.path.exists(resultsFolder):
+#     os.makedirs(resultsFolder)

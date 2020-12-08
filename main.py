@@ -2,21 +2,20 @@ import pygame
 import os
 import random
 import math
-import time
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 from photoToPicross import imageToPicross
 
+# Pygame setup
+pygame.init()
 pygame.font.init()
 
-###### Window setup
+# Window setup
 WIDTH, HEIGHT = 850, 650
 bottomBarHeight = HEIGHT//10
 
 WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
-GREY = (150, 150, 150)
 RED = (255, 0, 0)
 
 FONT_SIZE = 20
@@ -33,8 +32,6 @@ class Board:
         self.cols = gridWidth
         self.rows = gridHeight
         self.sqSize = sqSize
-
-        # self.rowClues, self.colClues = makeRandPuzzle(gridWidth, gridHeight)
 
         self.squares = [[Square(self.origin[0] + j * sqSize, self.origin[1] + i * sqSize, sqSize) for j in range(gridWidth)] for i in range(gridHeight)]
 
@@ -68,7 +65,6 @@ class Square:
             pygame.draw.rect(WINDOW, WHITE if self.state == 0 else BLUE, (self.x, self.y, self.size - 2, self.size - 2))
         else:
             WINDOW.blit(self.xSprite, (self.x, self.y))
-        # print("drew " + str(self.x) + ", " + str(self.y))
 
     def setState(self, newState):
         if self.stateChangeable:
@@ -80,7 +76,7 @@ class Square:
 
     def reset(self):
         self.state = 0
-        self.stateChangeable =True
+        self.stateChangeable = True
 
 
 def getClues(line):
@@ -102,9 +98,6 @@ def getClues(line):
 def makeRandPuzzle(width, height):
     rows = [[random.randint(0, 1) for j in range(width)] for i in range(height)]
     cols = [[row[j] for row in rows] for j in range(width)]
-
-    print(rows)
-    print(cols)
 
     return (rows, cols)
 
@@ -135,14 +128,13 @@ def main(mode, randomSize=None, imageFile=None):
 
     rows, cols = (0, 0)
 
+    # Create puzzle based on mode selected from main menu
     if mode == "image" and imageFile is not None:
         try:
             targetHeight = 20
             rows, cols = imageToPicross(imageFile, targetHeight)
-            print(pygame.mouse.get_focused())
         except Exception as e:
             # Unable to create puzzle from image
-            print(e)
             return
     elif mode == "random" and randomSize is not None:
         rows, cols = makeRandPuzzle(randomSize[0], randomSize[1])
@@ -150,6 +142,7 @@ def main(mode, randomSize=None, imageFile=None):
         # Invalid mode selected
         return
 
+    # Get clues and prepare to initialize board
     gridWidth = len(cols)
     gridHeight = len(rows)
 
@@ -166,22 +159,20 @@ def main(mode, randomSize=None, imageFile=None):
         cluesText = mainFont.render(cluesString, 1, WHITE)
         rowClueTextLines.append(cluesText)
 
-    cluesWidth = max([cluesLine.get_width() for cluesLine in rowClueTextLines]) + FONT_SIZE*0.25 #max([totalDigitsInArray(rowClues[i]) for i in range(gridHeight)])*FONT_SIZE
+    cluesWidth = max([cluesLine.get_width() for cluesLine in rowClueTextLines]) + FONT_SIZE*0.25
     cluesHeight = max([len(colClues[j]) for j in range(gridWidth)])*FONT_SIZE
 
     maxSqSize = 40
     sqSize = int(min((WIDTH - cluesWidth)//gridWidth, (HEIGHT - cluesHeight - bottomBarHeight)//gridHeight, maxSqSize))
 
+    # Initialize board
     board = Board((cluesWidth, cluesHeight), gridWidth, gridHeight, sqSize)
 
+    # Initialize solved variables
     solvedRows = [False for i in range(gridHeight)]
     solvedCols = [False for i in range(gridWidth)]
     solved = False
-
     solvedTimer = 0
-
-    print(rowClues)
-    print(colClues)
 
     # Display background
     WINDOW.blit(BG, (0, 0))
@@ -205,11 +196,7 @@ def main(mode, randomSize=None, imageFile=None):
     menuButton = createButton(os.path.join("PicrossAppAssets", "MainMenuButton.png"), (WIDTH//5, HEIGHT - bottomBarHeight//2))
     restartButton = createButton(os.path.join("PicrossAppAssets", "RestartButton.png"), (3*WIDTH//5, HEIGHT - bottomBarHeight//2))
 
-    def redrawWindow():  # make OO with each square an object with position, size, type(empty, full, X)
-        # if sqX != -1 and sqY != -1:
-        #     pygame.draw.rect(WINDOW, squareColour, (
-        #         cluesWidth + sqX*sqSize, cluesHeight + sqY*sqSize, sqSize - 2, sqSize - 2))
-
+    def redrawWindow():
         board.draw()
 
         if solved:
@@ -220,6 +207,7 @@ def main(mode, randomSize=None, imageFile=None):
 
     mouseDown = False
 
+    # Main loop
     while run:
         clock.tick(fps)
         redrawWindow()
@@ -231,7 +219,7 @@ def main(mode, randomSize=None, imageFile=None):
             else:
                 continue
 
-        ## Check if puzzle is solved
+        # Check if puzzle is solved
         for rowIndex in range(len(board.squares)):
             solvedRows[rowIndex] = checkLine([sq.state for sq in board.squares[rowIndex]], rowClues[rowIndex])
         i = 0
@@ -240,14 +228,14 @@ def main(mode, randomSize=None, imageFile=None):
             i += 1
         solved = all(solvedRows) and all(solvedCols)
 
+        # Event loop
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     quit()
             if event.type == pygame.QUIT:
                 quit()
-            elif event.type == pygame.MOUSEBUTTONDOWN or mouseDown: #pygame.mouse.get_pressed()[0] or pygame.mouse.get_pressed()[2]:
-                #print(event)
+            elif event.type == pygame.MOUSEBUTTONDOWN or mouseDown:
                 mouseDown = True
                 pos = pygame.mouse.get_pos()
                 if pos[0] > cluesWidth and pos[0] < cluesWidth + gridWidth*sqSize and pos[1] > cluesHeight and pos[1] < cluesHeight + gridHeight*sqSize:
@@ -255,10 +243,8 @@ def main(mode, randomSize=None, imageFile=None):
                     rowClicked = int((pos[1] - cluesHeight)//sqSize)
 
                     if pygame.mouse.get_pressed()[0]:  # left click = 1st element in returned tuple
-                        print(f"left clicked on square {colClicked}, {rowClicked}")
                         board.squares[rowClicked][colClicked].setState(1)  # state 1 means filled
                     elif pygame.mouse.get_pressed()[2]:  # right click = 3rd element
-                        print(f"right clicked on square {colClicked}, {rowClicked}")
                         board.squares[rowClicked][colClicked].setState(2)  # any other state number means 'x' / grey
                 elif mouseInRect(restartButton, pos) and event.type == pygame.MOUSEBUTTONDOWN:
                     board.resetBoard()
@@ -267,11 +253,25 @@ def main(mode, randomSize=None, imageFile=None):
             if event.type == pygame.MOUSEBUTTONUP:
                 mouseDown = False
                 board.makeSquaresChangeable()
-                #print("squares now changable")
+
 
 def mainMenu():
     titleFont = pygame.font.SysFont("calibri", FONT_SIZE*3)
     menuTextFont = pygame.font.SysFont("calibri", FONT_SIZE)
+
+    # Main menu text
+    title = titleFont.render("PICROSS", 1, WHITE)
+
+    widthText = menuTextFont.render("Choose width: ", 1, WHITE)
+    heightText = menuTextFont.render("Choose height: ", 1, WHITE)
+
+    instructionText = menuTextFont.render("How to play:", 1, WHITE)
+    textLine1 = menuTextFont.render("Satisfy all row and column clues by filling squares, leaving gaps between contiguous blocks", 1, WHITE)
+    textLine2 = menuTextFont.render("Left click to fill squares", 1, WHITE)
+    textLine3 = menuTextFont.render("Right click to mark squares as empty", 1, WHITE)
+
+    # Width and height of size buttons in pixels
+    numberButtonWidth, numberButtonHeight = (42, 42)
 
     run = True
 
@@ -279,21 +279,19 @@ def mainMenu():
 
     selectedWidth, selectedHeight = (0, 0)
 
+    # mainMenu loop
     while run:
         WINDOW.blit(BG, (0, 0))
 
-        title = titleFont.render("PICROSS", 1, WHITE)
+        # Draw title, dividing line and text for the width and height buttons
         WINDOW.blit(title, (WIDTH//2 - title.get_width()//2, HEIGHT//8))
-
-        numberButtonWidth, numberButtonHeight = (42, 42) #Width and height of size buttons in pixels
 
         pygame.draw.line(WINDOW, WHITE, (WIDTH//2, HEIGHT//3 - numberButtonHeight), (WIDTH//2, HEIGHT//2 + numberButtonHeight))
 
-        widthText = menuTextFont.render("Choose width: ", 1, WHITE)
-        heightText = menuTextFont.render("Choose height: ", 1, WHITE)
         WINDOW.blit(widthText, (WIDTH//4 - widthText.get_width() - numberButtonWidth//2, HEIGHT/3 - numberButtonHeight//4))
         WINDOW.blit(heightText, (WIDTH//4 - widthText.get_width() - numberButtonWidth//2, HEIGHT//3 + 3*numberButtonHeight//4))
 
+        # Flag for whether or not the random button should be enabled
         randomButtonEnabled = selectedWidth != 0 and selectedHeight != 0
 
         # Draw correct versions of the width and height buttons depending on which ones have been selected
@@ -313,19 +311,18 @@ def mainMenu():
         # Draw correct version of random button depending on if the width and height have been selected
         randomButton = createButton(os.path.join("PicrossAppAssets", "RandomPuzzleButton.png" if randomButtonEnabled else "RandomPuzzleButtonDisabled.png"), (WIDTH // 3, HEIGHT // 2))
 
+        # Draw 'from image' button
         imagePuzzleButton = createButton(os.path.join("PicrossAppAssets", "FromImageButton.png"), (2*WIDTH//3, 5*HEIGHT//12))
 
-        instructionText = menuTextFont.render("How to play:", 1, WHITE)
-        textLine1 = menuTextFont.render("Satisfy all row and column clues by filling squares, leaving gaps between contiguous blocks", 1, WHITE)
-        textLine2 = menuTextFont.render("Left click to fill squares", 1, WHITE)
-        textLine3 = menuTextFont.render("Right click to mark squares as empty", 1, WHITE)
-
+        # Draw instruction text
         WINDOW.blit(instructionText, (WIDTH//2 - instructionText.get_width()//2, 2*HEIGHT//3))
         WINDOW.blit(textLine1, (WIDTH//2 - textLine1.get_width()//2, 2*HEIGHT//3 + instructionText.get_height()))
         WINDOW.blit(textLine2, (WIDTH//2 - textLine2.get_width()//2, 2*HEIGHT//3 + instructionText.get_height() + textLine1.get_height()))
         WINDOW.blit(textLine3, (WIDTH//2 - textLine3.get_width()//2, 2*HEIGHT//3 + instructionText.get_height() + textLine1.get_height() + textLine2.get_height()))
+
         pygame.display.update()
 
+        # start main in appropriate mode depending on user choice
         if modeChoice == "random":
             main("random", randomSize=(selectedWidth, selectedHeight))
 
@@ -343,6 +340,7 @@ def mainMenu():
             modeChoice = None
             selectedWidth, selectedHeight = (0, 0)
 
+        # mainMenu event loop
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -352,37 +350,28 @@ def mainMenu():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mousePos = pygame.mouse.get_pos()
                 if mouseInRect(randomButton, mousePos) and randomButtonEnabled:
-                    print("rand button clicked!")
                     modeChoice = "random"
                 elif mouseInRect(imagePuzzleButton, mousePos):
                     modeChoice = "image"
                 elif mouseInRect(widthButtons[0], mousePos):
                     selectedWidth = 5
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(widthButtons[1], mousePos):
                     selectedWidth = 10
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(widthButtons[2], mousePos):
                     selectedWidth = 15
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(widthButtons[3], mousePos):
                     selectedWidth = 20
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[0], mousePos):
                     selectedHeight = 5
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[1], mousePos):
                     selectedHeight = 10
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[2], mousePos):
                     selectedHeight = 15
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
                 elif mouseInRect(heightButtons[3], mousePos):
                     selectedHeight = 20
-                    print(f"width: {selectedWidth}, height: {selectedHeight}")
 
     pygame.quit()
 
-
+# Start program
 tk.Tk().withdraw()
 mainMenu()
